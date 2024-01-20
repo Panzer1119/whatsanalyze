@@ -105,22 +105,21 @@ export default {
       const zip = jszip.loadAsync(arrayBuffer);
 
       zip
-        .then((zipData) => {
+        .then(async (zipData) => {
           let chatFile = this.getChatFile(zipData);
-          return parseString(chatFile, {
+          const messages = parseString(await chatFile, {
             parseAttachments: true,
-          }).then((messages) => {
-            return {
-              messages: messages,
-              // we just pass a list of filenames with compressed contents here
-              attachments: Object.values(zipData.files).map((file) => {
-                return {
-                  name: file.name,
-                  compressedContent: file._data.compressedContent,
-                };
-              }),
-            };
           });
+          return {
+            messages: messages,
+            // we just pass a list of filenames with compressed contents here
+            attachments: Object.values(zipData.files).map((file) => {
+              return {
+                name: file.name,
+                compressedContent: file._data.compressedContent,
+              };
+            }),
+          };
         })
         .then(this.updateMessages);
     },
@@ -162,31 +161,28 @@ export default {
         return;
       }
       const reader = new FileReader();
-      reader.addEventListener("loadend", (loadedFile) => {
-        parseString(loadedFile.target.result, {
+      reader.addEventListener("loadend", async (loadedFile) => {
+        const messages = parseString(loadedFile.target.result, {
           parseAttachments: true,
-        }).then(async (messages) => {
-          // the only difference to the zip file is, that these blobs are already inflated
-          let attachments = [];
-          // we would like to have all files as uint8arrays, as such we have to read the file in as array
-          await files.forEach(async (file) => {
-            const arr = await this.readFileAsArrayBuffer(file);
-            attachments.push({ name: file.name, decompressedData: arr });
-          });
+        });
+        // the only difference to the zip file is, that these blobs are already inflated
+        let attachments = [];
+        // we would like to have all files as uint8arrays, as such we have to read the file in as array
+        await files.forEach(async (file) => {
+          const arr = await this.readFileAsArrayBuffer(file);
+          attachments.push({ name: file.name, decompressedData: arr });
+        });
 
-          this.updateMessages({
-            messages: messages,
-            attachments,
-          });
+        this.updateMessages({
+          messages: messages,
+          attachments,
         });
       });
       reader.readAsText(chatFile);
     },
 
     txtLoadEndHandler(e) {
-      parseString(e.target.result).then((messages) =>
-        this.updateMessages({ messages: messages })
-      );
+      this.updateMessages({ messages: parseString(e.target.result) });
     },
 
     updateMessages(chatObject) {
