@@ -53,7 +53,7 @@
     "stopwords-en": "^0.3.0",
     "vue-chartjs": "^3.5.1",
     "vue-gtag": "^1.11.0",
-    "whatsapp-chat-parser": "^3.1.0",
+    "whatsapp-chat-parser": "^4.0.0",
     "worker-loader": "^3.0.8"
   },
   "devDependencies": {
